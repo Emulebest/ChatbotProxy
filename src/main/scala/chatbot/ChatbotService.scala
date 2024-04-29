@@ -23,7 +23,7 @@ class ChatbotServiceImpl(url: String) extends ChatbotService {
         _ <- ZIO.logInfo(s"Response: $res")
         body <- res match {
           case Some(response) => response.body.asString
-          case None => ZIO.succeed("Error")
+          case None => ZIO.succeed("Unknown Error")
         }
       } yield body
     }

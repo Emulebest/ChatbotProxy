@@ -1,11 +1,10 @@
 package org.quantum.application
 
-import org.quantum.application.buffer.*
-import org.quantum.application.chatbot.*
+import buffer.*
+import chatbot.*
+
 import zio.*
 import zio.http.*
-import zio.http.ConnectionPoolConfig.{Disabled, Dynamic, Fixed}
-import zio.http.netty.NettyConfig
 
 object Main extends ZIOAppDefault {
   val anyRoute = handler { (req: Request) =>
@@ -25,29 +24,7 @@ object Main extends ZIOAppDefault {
           } yield Response.json(chatbotResponse)
       }
     } yield response
-    //    Response.text("Hello, World!")
-    //      req.body.asString.map(Response.text)
   }
-
-  val clientConfig = ZClient.Config(
-    ssl = None,
-    proxy = None,
-    connectionPool = Fixed(10),
-    maxInitialLineLength = 4096,
-    maxHeaderSize = 8192,
-    requestDecompression = Decompression.No,
-    localAddress = None,
-    addUserAgentHeader = true,
-    webSocketConfig = WebSocketConfig.default,
-    idleTimeout = None,
-    connectionTimeout = None,
-  )
-
-//  lazy val clientConfigured: ZLayer[Any, Throwable, Client] = {
-//    implicit val trace: Trace = Trace.empty
-//    (ZLayer.succeed(clientConfig) ++ ZLayer.succeed(NettyConfig.default) ++
-//      DnsResolver.default) >>> ZClient.live
-//  }
 
   override val run =
     for {

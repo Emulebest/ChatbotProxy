@@ -6,6 +6,8 @@ ThisBuild / scalaVersion := "3.4.1"
 enablePlugins(JavaAppPackaging)
 enablePlugins(DockerPlugin)
 
+ThisBuild / run / javaOptions += "-Djava.net.preferIPv4Stack=true"
+
 dockerBaseImage := "openjdk:23-slim"
 dockerExposedPorts := Seq(8081)
 dockerBuildCommand := {
