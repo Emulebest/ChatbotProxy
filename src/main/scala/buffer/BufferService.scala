@@ -23,8 +23,8 @@ class BufferServiceImpl(queueMapping: Ref[Map[SessionId, (Queue[Request], Queue[
 
           case None =>
             for {
-              requestQueue <- Queue.bounded[Request](5)
-              responseQueue <- Queue.bounded[String](5)
+              requestQueue <- Queue.dropping[Request](10)
+              responseQueue <- Queue.dropping[String](10)
               _ <- queueMapping.update(_ + (sessionId -> (requestQueue, responseQueue)))
               _ <- ZIO.logInfo(s"Starting session processing for $sessionId")
               _ <- startSessionProcessing(requestQueue, responseQueue).forever.forkDaemon
