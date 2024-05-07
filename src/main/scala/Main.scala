@@ -10,15 +10,22 @@ import zio.http.netty.NettyConfig
 object Main extends ZIOAppDefault {
   val anyRoute = handler { (req: Request) =>
     for {
-      // full path http://localhost:8000/api/v1/chat/retail//clients/{client_id}/chatbots/{chatbot_id}/sessions/{session_id}/answer
+      // full path http://localhost:8000/api/v1/chat/retail//clients/{client_id}/chatbots/{chatbot_id}/sessions/{session_id}/answer for answer
+      // full path http://localhost:8000/api/v1/chat/retail//clients/{client_id}/chatbots/{chatbot_id}/sessions/{session_id}/close for close
       _ <- ZIO.logDebug(s"Received request: ${req.path.toString.split('/').toList.drop(1)}")
       response <- req.path.toString.split("/").toList.drop(1) match {
         case "api" :: "v1" :: "chat" :: "retail" :: "clients" :: clientId :: "chatbots" :: chatbotId :: "sessions" :: sessionId :: "answer" :: Nil =>
           for {
             _ <- ZIO.logInfo(s"Buffering request for client: $clientId, chatbot: $chatbotId, session: $sessionId")
             _ <- BufferService.bufferRequest(req, sessionId)
-            response <- BufferService.getResponse(req, sessionId)
+            response <- BufferService.getChannelResponse(req, sessionId)
           } yield response
+        case "api" :: "v1" :: "chat" :: "retail" :: "clients" :: clientId :: "chatbots" :: chatbotId :: "sessions" :: sessionId :: "close" :: Nil =>
+          for {
+            _ <- ZIO.logInfo(s"Closing session for client: $clientId, chatbot: $chatbotId, session: $sessionId")
+            _ <- BufferService.closeSession(sessionId)
+            chatbotResponse <- ChatbotService.getResponse(req)
+          } yield Response.json(chatbotResponse)
         case _ =>
           for {
             chatbotResponse <- ChatbotService.getResponse(req)
@@ -54,7 +61,7 @@ object Main extends ZIOAppDefault {
         case _: NumberFormatException => ZIO.fail("Invalid port")
       }
       _ <- ZIO.logInfo(s"Starting server on port $port with proxy to $url")
-      queueMapping <- Ref.make(Map.empty[SessionId, (Queue[Request], Queue[String])])
+      queueMapping <- Ref.make(Map.empty[SessionId, (Queue[Request], Queue[String], Queue[Boolean])])
       server <- Server
         .serve(
           anyRoute.sandbox.toHttpApp
