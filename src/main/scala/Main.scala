@@ -60,12 +60,15 @@ object Main extends ZIOAppDefault {
       port <- System.envOrElse("PROXY_PORT", "8082").mapAttempt(_.toInt).catchSome {
         case _: NumberFormatException => ZIO.fail("Invalid port")
       }
+      timeout <- System.envOrElse("PROXY_TIMEOUT", "240").mapAttempt(_.toLong).catchSome {
+        case _: NumberFormatException => ZIO.fail("Invalid timeout")
+      }
       _ <- ZIO.logInfo(s"Starting server on port $port with proxy to $url")
       queueMapping <- Ref.make(Map.empty[SessionId, (Queue[Request], Queue[String], Queue[Boolean])])
       server <- Server
         .serve(
           anyRoute.sandbox.toHttpApp
         )
-        .provide(Server.defaultWithPort(port), clientLayer, ChatbotService.layer(url), BufferService.layer(queueMapping))
+        .provide(Server.defaultWithPort(port), clientLayer, ChatbotService.layer(url, timeout), BufferService.layer(queueMapping))
     } yield server
 }
